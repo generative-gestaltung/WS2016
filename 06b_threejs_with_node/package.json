@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodejs index.js"
+    "start": "node index.js"
   },
   "author": "maxg",
   "license": "BSD-2-Clause",
   
   "dependencies" : {
-    "restify" : "latest"
+    "restify" : "latest",
+    "websocket" : "latest"
   }
 }

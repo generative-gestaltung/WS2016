@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - geometry - cube</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="three.min.js"></script>
+		<script src="gg_util_perlin.js"></script>
+
+		<script>
+
+			var camera, scene, renderer;
+			var meshes = [];
+			var directionalLight;
+			var pointLight;
+			var target;
+
+			var N = 40;
+			init();
+			animate();
+
+			var f0 = 0.1;
+			var f1 = 0.1;
+
+
+			function create_meshes() {
+
+				var d = 50;
+					for (var i=0; i<N; i++) {
+						meshes[i] = [];
+						for (var j=0; j<N; j++) {
+
+							var h = 400; // + noise.simplex2(f0*i, f1*j)*150;
+
+							var geometry = new THREE.BoxBufferGeometry (d, d, h);
+
+							//var material = new THREE.MeshBasicMaterial ({ map: texture } );
+							var material = new THREE.MeshLambertMaterial({color: 0xffffff, shading: THREE.FlatShading});
+							var mesh = new THREE.Mesh (geometry, material);
+
+							mesh.position.x = (i-N/2)*d*2.5;
+							mesh.position.y = (j-N/2)*d*2.5;
+							mesh.rotation.z = Math.random()*0.3;
+
+							meshes[i][j] = mesh;
+							scene.add (mesh);
+						}
+					}
+			}
+
+
+			function init() {
+
+				target = new THREE.Vector3(0,0,0);
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 400;
+
+				scene = new THREE.Scene();
+
+
+				create_meshes();
+				directionalLight = new THREE.DirectionalLight(0x00ffff, 1);
+				directionalLight.position.x = Math.random() - 0.5;
+				directionalLight.position.y = Math.random() - 0.5;
+				directionalLight.position.z = Math.random() - 0.5;
+				directionalLight.position.normalize();
+
+				pointLight = new THREE.PointLight( 0xff0000, 1, 0 );
+				scene.add( pointLight );
+
+				scene.add (directionalLight);
+
+				var ambientLight = new THREE.AmbientLight (0x333333); // soft white light
+				scene.add (ambientLight);
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			var cnt = 0;
+
+			function animate() {
+
+				if (cnt==0) {
+					target = new THREE.Vector3(Math.random()*1000-500, Math.random()*1000-500, 0);
+				}
+
+				console.log(target);
+
+				cnt = (cnt+1)%100;
+
+				var time = performance.now() / 1000.0;
+				requestAnimationFrame( animate );
+
+				var R = 1000;
+				camera.position.x = R*Math.sin(time*0.1);
+				camera.position.y = R*Math.cos(time*0.1);
+				camera.position.z = 200*Math.cos(time*0.1);
+
+				pointLight.position.x = R*Math.sin(time);
+				pointLight.position.y = R*Math.cos(time);
+				pointLight.position.z = 400;
+
+
+				camera.lookAt (target);
+				camera.up = new THREE.Vector3(0,1,0);
+
+
+				for (var i=0; i<N; i++) {
+					for (var j=0; j<N; j++) {
+						var h = noise.simplex3 (f0*i, f1*j, time*0.1)*0.5+0.5;
+						meshes[i][j].scale.z = h;
+						//meshes[i][j].scale.y = Math.sin(time*0.001+j*0.2)*0.5+0.5;
+					}
+				}
+				//mesh.rotation.x += 0.005;
+				//mesh.rotation.y += 0.01;
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
