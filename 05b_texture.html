@@ -2,6 +2,7 @@
 <html>
 
   <body>
+
     <canvas id="myCanvas" width="1400" height="1000"></canvas>
     <script type="text/javascript" src="gg_util_perlin.js"></script>
     <script type="text/javascript" src="gg_util_functions.js"></script>
@@ -13,9 +14,8 @@
 		var canvas = document.getElementById("myCanvas");
 		var context = canvas.getContext('2d');
     var t = 0;
-
-    var N = 220;
-    cell_noise.recalc(50, N);
+    var N = 200;
+    cell_noise.recalc(150, 200);
 
     var w = canvas.width / N;
     var h = canvas.height / N;
@@ -40,6 +40,7 @@
 
     var setup = function() {
 
+/*
       sunPos = new Vector2 (0,0);
       sunDir = new Vector2 (0,0);
 
@@ -51,8 +52,8 @@
         gradientData[i] = [];
         for (var j=0; j<N; j++) {
 
-          textureData[i][j] =  (cell_noise.value(i, j)[0]
-                              - cell_noise.value(i,j)[1])*800;
+          var d0 = cell_noise.value(1.0*i/N, 1.0*j/N)[0];
+          textureData[i][j] =  d0;
           gradientData[i][j] = new Vector2(0,0);
         }
       }
@@ -61,12 +62,13 @@
         for (var j=1; j<N-1; j++) {
           for (var di=0; di<3; di++) {
             for (var dj=0; dj<3; dj++) {
-              gradientData[i][j].x += sobelKernelX[di][dj] * textureData[i+di-1][j+dj-1];
-              gradientData[i][j].y += sobelKernelY[di][dj] * textureData[i+di-1][j+dj-1];
+              //gradientData[i][j].x += sobelKernelX[di][dj] * textureData[i+di-1][j+dj-1];
+              //gradientData[i][j].y += sobelKernelY[di][dj] * textureData[i+di-1][j+dj-1];
             }
           }
         }
       }
+      */
     }
 
 
@@ -77,14 +79,18 @@
       for (var i=0; i<N; i++) {
         for (var j=0; j<N; j++) {
 
-          sunDir = sunPos.sub(new Vector2(i*w, j*h)).normalize();
-          var b = sunDir.dot(gradientData[i][j])*0.3+4;
+          //sunDir = sunPos.sub(new Vector2(i*w, j*h)).normalize();
+          //var b = sunDir.dot(gradientData[i][j])*0.3+4;
+
+          var b = (cell_noise.value(1.0*i/N, 1.0*j/N)[1]*0
+                  +cell_noise.value(1.0*i/N, 1.0*j/N)[0])*50.0;
           //setBrightness (b);
-          var R = (cell_noise.value(i,j)[1]
-              -cell_noise.value(i,j)[0])*200;
-          var G = cell_noise.value(i,j)[2]*40;
-          var B = cell_noise.value(i,j)[3]*40;
-          setFillColor (R*b, G*b, B*b);
+
+          var R = cell_noise.value(1.0*i/N, 1.0*j/N)[0] * 1000*b;
+          var G = cell_noise.value(1.0*i/N, 1.0*j/N)[1] * 1000;
+          var B = cell_noise.value(1.0*i/N, 1.0*j/N)[2] * 599;
+
+          setFillColor (R, G, B);
           context.fillRect(i*w, j*h, w, h);
         }
       }
@@ -94,8 +100,7 @@
       t = performance.now() / 1000.0;
 
       var R = 10000;
-      sunPos.x = R*Math.sin(t);
-      sunPos.y = R*Math.cos(t);
+
       draw();
       requestAnimationFrame(update);
     };

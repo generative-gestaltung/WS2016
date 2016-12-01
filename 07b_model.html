@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="three.min.js"></script>
+		
+		<script>
+
+			var camera, scene, renderer;
+			var meshes = [];
+			var directionalLight;
+			var pointLight;
+			var target;
+			var pos;
+			var dir;
+			var cnt = 0;
+			var newDir;
+
+			var N = 400;
+			init();
+			animate();
+
+			var f0 = 0.1;
+			var f1 = 0.1;
+
+
+			function create_meshes() {
+
+				var material = new THREE.MeshLambertMaterial({color: 0xffffff, shading: THREE.FlatShading});
+				
+				for (var i=0; i<N; i++) {
+					
+					var h = 200-i;
+					if (h<10) h = 10;
+					
+					var geometry = new THREE.BoxBufferGeometry (h, h, h);
+					var mesh = new THREE.Mesh (geometry, material);
+
+					mesh.position.x = (Math.random()*2-1)*2*i;
+					mesh.position.y = (Math.random()*2-1)*2*i;
+					mesh.position.z = (Math.random()*2-1)*2*i;
+
+					mesh.scale.x = 0;
+					mesh.scale.y = 0;
+					mesh.scale.z = 0;
+
+					meshes[i] = mesh;
+					scene.add (mesh);
+					
+				}
+			}
+
+
+			function init() {
+
+				pos = new THREE.Vector3(1000,1000,0);
+				dir = new THREE.Vector3(1,0,0);
+				newDir = new THREE.Vector3(1,0,0);
+				target = new THREE.Vector3(0,0,0);
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 400;
+
+				scene = new THREE.Scene();
+
+
+				create_meshes();
+				directionalLight = new THREE.DirectionalLight(0x00ffff, 1);
+				directionalLight.position.x = Math.random() - 0.5;
+				directionalLight.position.y = Math.random() - 0.5;
+				directionalLight.position.z = Math.random() - 0.5;
+				directionalLight.position.normalize();
+
+				pointLight = new THREE.PointLight( 0xff0000, 1, 0 );
+				scene.add( pointLight );
+
+				scene.add (directionalLight);
+
+				var ambientLight = new THREE.AmbientLight (0x333333); // soft white light
+				scene.add (ambientLight);
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+
+			function blendVector (v0, v1, t) {
+				return new THREE.Vector3 (
+					v0.x * (1-t) + t*v1.x,
+					v0.y * (1-t) + t*v1.y,
+					v0.z * (1-t) + t*v1.z
+				);
+			}
+
+			function rand (n) {
+				return Math.floor(Math.random()*n*0.99999) / n;
+			}
+
+
+			function animate() {
+
+
+				dir = blendVector(newDir, dir, 0.99);
+				cnt = (cnt+1)%200;
+				if (cnt== 0) {
+
+				}
+
+				var time = performance.now() / 1000.0;
+				requestAnimationFrame( animate );
+				var R = 1000;
+
+				for (var i=0; i<N; i++) {
+					if (i<time*100) {
+						meshes[i].scale.x = 1;
+						meshes[i].scale.y = 1;
+						meshes[i].scale.z = 1;
+					}
+				}
+				pointLight.position.x = R*Math.sin(time);
+				pointLight.position.y = R*Math.cos(time);
+				pointLight.position.z = 400;
+
+				camera.position.x = R*Math.sin(time);
+				camera.position.z = R*Math.cos(time);
+
+				camera.lookAt (target);
+				camera.up = new THREE.Vector3(0,1,0);
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

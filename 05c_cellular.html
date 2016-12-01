@@ -1,0 +1,100 @@
+<!DOCTYPE HTML>
+<html>
+
+  <body>
+    <canvas id="myCanvas" width="1400" height="1000"></canvas>
+    <script type="text/javascript" src="gg_util_perlin.js"></script>
+    <script type="text/javascript" src="gg_util_functions.js"></script>
+    <script type="text/javascript" src="gg_util_vector.js"></script>
+
+    <script>
+
+		var canvas = document.getElementById("myCanvas");
+		var context = canvas.getContext('2d');
+    var t = 0;
+
+    var N = 220;
+    var ncenters = 50;
+    var nclasses = 8;
+    var centers = [];
+    var colors = [];
+
+    var w = canvas.width / N;
+    var h = canvas.height / N;
+    var textureData = [];
+
+
+
+
+    var setup = function() {
+
+      // initialize colors for all classes
+      for (var i=0; i<nclasses; i++) {
+        colors[i] = new Vector3(Math.round(Math.random()*255),
+                                Math.round(Math.random()*255),
+                                Math.round(Math.random()*255));
+      }
+
+      // initialize centers
+      for (var i=0; i<ncenters; i++) {
+
+
+        centers[i] = {
+          cl : Math.floor(Math.random()*nclasses*0.999),
+          pos : new Vector2(Math.random()*canvas.width, Math.random()*canvas.height)
+        }
+      }
+
+      // calc texture data
+      for (var i=0; i<N; i++) {
+        textureData[i] = [];
+        for (var j=0; j<N; j++) {
+
+          var dMin = 99999999;
+          var nn = {};
+
+          var x = i*w;
+          var y = j*h;
+
+          // find nearest neighbor
+          for (var c=0; c<ncenters; c++) {
+            var d = centers[c].pos.dist(new Vector2(x,y));
+            if (d<dMin) {
+              dMin = d;
+              nn = centers[c];
+            }
+          }
+          //textureData[i][j] = colors[nn.cl];
+          textureData[i][j] = new Vector3(dMin, dMin, dMin);
+        }
+      }
+    }
+
+
+    function draw() {
+      context.fillStyle = "rgba(0,0,0,1)"
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (var i=0; i<N; i++) {
+        for (var j=0; j<N; j++) {
+          setFillColor (textureData[i][j].x, textureData[i][j].y, textureData[i][j].z);
+          context.fillRect(i*w, j*h, w, h);
+        }
+      }
+    }
+
+    function update () {
+      t = performance.now() / 1000.0;
+
+      draw();
+      requestAnimationFrame(update);
+    };
+
+    setup();
+    update();
+
+    </script>
+
+  </body>
+
+</html>
