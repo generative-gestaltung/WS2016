@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+<html>
+
+  <body>
+    <canvas id="myCanvas" width="1000" height="1000"></canvas>
+
+    <script>
+
+		// get the context
+		var canvas = document.getElementById("myCanvas");
+		var context = canvas.getContext('2d');
+
+    var grammarString = "vv[+v]v[-v]";
+
+    function replace () {
+      var str = "";
+      for (var j=0; j<grammarString.length; j++) {
+        if (grammarString[j]=='v')
+          str += grammarString;
+        else
+          str += grammarString[j];
+      }
+      return str;
+    }
+
+		// create 300 polygons with 300 edges
+		var setup = function() {
+
+      var N = 1;
+      grammarString = replace();
+      grammarString = replace();
+		}
+
+    	var draw = function() {
+
+    		// clear canvas
+    		context.fillStyle = "rgba(255,255,255,1.0)";
+    		context.fillRect (0, 0, canvas.width, canvas.height);
+
+        context.save();
+        context.translate(200, 400);
+        context.lineWidth = 2;
+        context.beginPath();
+
+        for (var i=0; i<grammarString.length; i++) {
+          if (grammarString[i]=='v') {
+            context.moveTo(0,0);
+            context.lineTo(10,0);
+            context.translate(10,0);
+          }
+          else if (grammarString[i]=='+'){
+            context.rotate(Math.PI/7);
+          }
+          else if (grammarString[i]=="-") {
+            context.rotate(-Math.PI/7);
+          }
+
+          else if (grammarString[i]=="[") {
+            context.save();
+          }
+          else if (grammarString[i]=="]") {
+            context.restore();
+          }
+        }
+
+        context.stroke();
+        context.restore();
+
+        frameCount = frameCount+1;
+		   	requestAnimationFrame(draw);
+      };
+
+      setup();
+    	draw();
+
+    </script>
+  </body>
+</html>

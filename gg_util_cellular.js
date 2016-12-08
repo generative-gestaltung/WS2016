@@ -51,14 +51,15 @@
 
   module.recalc(50, 100);
 
-  module.value = function (x, y) {
+ // get distance from point (x,y) to nth neighbor
+  module.value = function (x, y, n) {
     var i = Math.floor(x*module.res);
     var j = Math.floor(y*module.res);
     if (i>module.res-1) i = module.res-1;
     if (j>module.res-1) j = module.res-1;
     if (i<0) i = 0;
     if (j<0) j = 0;
-    return module.data[i][j];
+    return module.data[i][j][n];
   }
 
 })(this);

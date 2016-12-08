@@ -13,7 +13,7 @@
 	<body>
 
 		<script src="three.min.js"></script>
-		
+
 		<script>
 
 			var camera, scene, renderer;
@@ -43,8 +43,8 @@
 				if (elemCnt>=N)
 					return;
 				elemCnt += 1;
-				
-					
+
+
 				var h = 200;
 				var geometry = new THREE.BoxBufferGeometry (h, 15, 15);
 				var mesh = new THREE.Mesh (geometry, material);
@@ -59,7 +59,7 @@
 */
 				mesh.rotateX(rotX);
 				mesh.translateX(100);
-				scene.add (mesh);	
+				scene.add (mesh);
 			}
 
 
@@ -80,8 +80,12 @@
 
 
 				for (var i=0; i<M; i++) {
-					anglesY[i] = Math.sin(i*0.02)*0.6 * 1;
-					anglesZ[i] = Math.sin(i*0.2)*0.6 * 1;
+					anglesY[i] = Math.sin(i*0.1);
+					if (anglesY[i]>0.5) anglesY[i] = 0.3;
+					else if (anglesY[i]<-0.5) anglesY[i] = -0.03;
+					else anglesY[i] = 0.4;
+					 ///Math.sin(i*0.02)*0.6 * 1;
+					anglesZ[i] = Math.sin(i*0.3); //Math.sin(i*0.2)*0.6 * 1;
 				}
 
 /*
@@ -152,20 +156,20 @@
 			var xi = 0;
 			function animate() {
 
-
 				var time = performance.now() / 1000.0;
-
 
 				var L = 80;
 				var geometry = new THREE.BoxBufferGeometry (L, 15, 15);
 				var mesh = new THREE.Mesh (geometry, material);
 				mesh.translateY(-600);
+
 				for (var j=0; j<elemCnt; j++) {
 					mesh.translateX(L/2);
 					mesh.rotateZ(anglesZ[j]);
 					mesh.rotateY(anglesY[j]);
 					mesh.translateX(L/2);
 				}
+
 				elemCnt += 1;
 				scene.add(mesh);
 
@@ -178,9 +182,9 @@
 				pointLight.position.y = R*Math.cos(time);
 				pointLight.position.z = 400;
 
-				camera.position.x = R*Math.sin(time*0+2);
-				camera.position.y = 200;
-				camera.position.z = R*Math.cos(time*0+2);
+				camera.position.x = R*Math.sin(time*0);
+				camera.position.y = 1200;
+				camera.position.z = R*Math.cos(time*0);
 
 				camera.lookAt (target);
 				camera.up = new THREE.Vector3(0,1,0);
