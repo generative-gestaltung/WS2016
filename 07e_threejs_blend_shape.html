@@ -1,0 +1,212 @@
+<html>
+  <body>
+    <script src="three.min.js"></script>
+    <script src="gg_util_functions.js"></script>
+    <script src="gg_util_perlin.js"></script>
+
+      <script id="vertexShader" type="x-shader/x-vertex">
+
+        // comes with framework
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+
+        // user defined uniforms, values are passed in runtime
+        uniform float time;
+
+        // user defined attributes
+        attribute vec3 position;
+        attribute vec4 color;
+        attribute vec3 normal;
+
+        // data to be passed to fragment shader
+        varying vec3 v_position;
+        varying vec4 v_color;
+
+        void main() {
+
+          vec4 positionNew = vec4 (position, 1.0);
+
+          // calcuate pixel position on screen and pass to fragment shader
+          gl_Position = projectionMatrix * modelViewMatrix * positionNew;
+
+          // pass world coords position to fragment shader
+          v_position = positionNew.xyz;
+
+          // pass color to fragment shader
+          float h = position.y*0.002 + 0.4;
+          v_color = vec4(h, h, h, 1.0);
+        }
+
+        </script>
+
+        <script id="fragmentShader" type="x-shader/x-fragment">
+
+          precision mediump float;
+          precision mediump int;
+
+          // input from vertex shader
+          varying vec3 v_position;
+          varying vec4 v_color;
+
+          void main() {
+            gl_FragColor = v_color;
+          }
+        </script>
+
+    <script>
+
+    var scene;
+    var camera;
+    var mesh;
+    var material;
+    var renderer;
+
+
+    var W = 10;
+    var N = 200;
+
+    var bufferScene = new THREE.Scene();
+    var bufferTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
+
+
+    function getHeight(x, y) {
+      return h0 (x,y);
+    }
+
+    function h0 (x, y) {
+      return Math.sin(x*0.03)*Math.sin(y*0.03)*200;
+    }
+
+    function h1 (x, y) {
+      var scaleH = 200;
+      var value = 1.0;
+
+      // reduce amplitude for each higher frequency
+      var H = 1.5;
+
+      // calculate 5 frequencies
+      var nOctaves = 5;
+
+      // base frequency
+      var f0 = 0.001;
+
+      // double frequency in each step
+      var lacunarity = 1.7;
+      var pointX = x*f0;
+      var pointY = y*f0;
+      for (var i=0; i<nOctaves; i++) {
+        value += noise.simplex2 (pointX, pointY) * Math.pow(lacunarity, -H*i);
+        pointX *= lacunarity;
+        pointY *= lacunarity;
+      }
+      return value * scaleH;
+      //return (cell_noise.value(x, y, 1) - cell_noise.value(x, y, 0) ) * scaleH;
+    }
+
+    function init_gl() {
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera (70, window.innerWidth/window.innerHeight, 0.1, 50000);
+
+      // default params
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize (window.innerWidth, window.innerHeight);
+      document.body.appendChild (renderer.domElement);
+
+      material = new THREE.RawShaderMaterial ({
+                            uniforms: {
+                              time: { type: "f", value: 1.0 }
+                            },
+                            vertexShader: document.getElementById ('vertexShader').textContent,
+                            fragmentShader: document.getElementById ('fragmentShader').textContent,
+                            side: THREE.DoubleSide,
+                            transparent: true
+                        });
+
+      var geometry = new THREE.Geometry();
+
+      for (var i=0; i<N; i++) {
+        for (var j=0; j<N; j++) {
+
+          var x = (i-1)*W;
+          var z =  j*W;
+          var h = getHeight(x, z);
+          geometry.vertices.push(new THREE.Vector3 (x,  h, z));
+
+          x = (i-1)*W;
+          z =  (j-1)*W;
+          h = getHeight(x, z);
+    	    geometry.vertices.push(new THREE.Vector3 (x, h, z));
+
+          x = i*W;
+          z = (j-1)*W;
+          h = getHeight(x, z);
+    	    geometry.vertices.push(new THREE.Vector3 (x, h, z));
+
+          x = i*W;
+          z = (j-1)*W;
+          h = getHeight(x, z);
+       	  geometry.vertices.push(new THREE.Vector3 (x, h, z));
+
+          x = i*W;
+          z = j*W;
+          h = getHeight(x, z);
+       	  geometry.vertices.push(new THREE.Vector3 (x, h, z));
+
+          x = (i-1)*W;
+          z = j*W;
+          h = getHeight(x, z);
+       	  geometry.vertices.push(new THREE.Vector3 (x, h, z));
+
+          geometry.faces.push (
+            new THREE.Face3((i+j*N)*6, (i+j*N)*6+1, (i+j*N)*6+2),
+            new THREE.Face3((i+j*N)*6+3, (i+j*N)*6+4, (i+j*N)*6+5)
+          );
+        }
+      }
+      mesh = new THREE.Mesh (geometry, material);
+      mesh.translateX(-N/2*W);
+      mesh.translateZ(-N/2*W);
+      scene.add(mesh);
+    }
+
+
+    var render = function () {
+
+      var time = performance.now();
+      var R = 1400;
+      var f = 0.00002;
+      camera.position.x = R*Math.sin(time*f);
+      camera.position.y = 1000;
+      camera.position.z = R*Math.cos(time*f);
+
+      camera.lookAt (new THREE.Vector3 (0,0,0));
+
+      mesh.material.uniforms.time.value = time;
+      var t = Math.sin(time*f)*0.5+0.5;
+
+      for (var i=0; i<N; i++) {
+        for (var j=0; j<N; j++) {
+          var ind = j*N+i;
+
+          for (var v=0; v<6; v++) {
+            var vertex = mesh.geometry.vertices[ind*6+v];
+
+            vertex.y  = blend (h0(vertex.x, vertex.z),
+                               h1(vertex.x, vertex.z),
+                               t);
+          }
+        }
+      }
+      mesh.geometry.verticesNeedUpdate = true;
+
+      requestAnimationFrame (render);
+      renderer.render (scene, camera);
+    };
+
+    init_gl();
+    render();
+
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="three.min.js"></script>
+
+		<script>
+
+			var camera, scene, renderer;
+			var meshes = [];
+			var directionalLight;
+			var pointLight;
+			var target;
+			var pos;
+			var dir;
+			var cnt = 0;
+			var newDir;
+			var anglesZ = [];
+			var anglesY = [];
+
+			var MAX_ELEMS = 2000;
+			var elemCnt = 0;
+			var material;
+			var MOVE = 0;
+			var MOVE_R = 1;
+			var ROTX = 2;
+			var ROTY = 3;
+			var ROTZ = 4;
+			var cmd = [
+				[MOVE_R,10], [ROTX,0.2], [MOVE_R,10],[ROTX,-0.2],
+				[ROTX,-0.2], [MOVE_R,10]
+			];
+			var MAX_RECURSIONS = 3;
+			var LEN = 4;
+			var ANGLE = Math.PI/16;
+
+			init();
+			animate();
+
+
+
+
+			function createElem (len) {
+
+				if (elemCnt>=MAX_ELEMS)
+					return;
+				elemCnt += 1;
+
+				var geometry = new THREE.BoxBufferGeometry (len, 15, 15);
+				var mesh = new THREE.Mesh (geometry, material);
+
+				return mesh;
+			}
+
+
+			function d (r, elem) {
+
+
+				for (var i=0; i<cmd.length; i++) {
+
+					// done, create elem
+					if ((cmd[i][0]==MOVE_R && r==MAX_RECURSIONS) | cmd[i][0]==MOVE) {
+						elem.translateX (cmd[i][1]);
+						scene.add(elem);
+						console.log("ADD ELEM");
+					}
+
+					// recursion
+					if (cmd[i][0]==MOVE_R && r<MAX_RECURSIONS){
+						d (r+1,elem);
+					}
+
+					if (cmd[i][0]==ROTX) {
+						elem.rotateX(cmd[i][1]);
+					}
+
+					if (cmd[i][0]==ROTY) {
+						elem.rotateY(cmd[i][1]);
+					}
+
+					if (cmd[i][0]==ROTZ) {
+						elem.rotateZ(cmd[i][1]);
+					}
+				}
+			}
+
+
+
+			function init() {
+
+				pos = new THREE.Vector3(1000,1000,0);
+				dir = new THREE.Vector3(1,0,0);
+				newDir = new THREE.Vector3(1,0,0);
+				target = new THREE.Vector3(0,0,0);
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 400;
+
+				material = new THREE.MeshLambertMaterial({color: 0xffffff, shading: THREE.FlatShading});
+				scene = new THREE.Scene();
+
+
+				directionalLight = new THREE.DirectionalLight(0x00ffff, 1);
+				directionalLight.position.x = Math.random() - 0.5;
+				directionalLight.position.y = Math.random() - 0.5;
+				directionalLight.position.z = Math.random() - 0.5;
+				directionalLight.position.normalize();
+
+				pointLight = new THREE.PointLight( 0xff0000, 1, 0 );
+				scene.add( pointLight );
+
+				scene.add (directionalLight);
+
+				var ambientLight = new THREE.AmbientLight (0x333333); // soft white light
+				scene.add (ambientLight);
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				var elem = createElem(100);
+				d(1, elem);
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+
+			function blendVector (v0, v1, t) {
+				return new THREE.Vector3 (
+					v0.x * (1-t) + t*v1.x,
+					v0.y * (1-t) + t*v1.y,
+					v0.z * (1-t) + t*v1.z
+				);
+			}
+
+			function rand (n) {
+				return Math.floor(Math.random()*n*0.99999) / n;
+			}
+
+
+			var xi = 0;
+			function animate() {
+
+				var time = performance.now() / 1000.0;
+
+
+				requestAnimationFrame (animate);
+				var R = 3000;
+
+				pointLight.position.x = R*Math.sin(time);
+				pointLight.position.y = R*Math.cos(time);
+				pointLight.position.z = 400;
+
+				camera.position.x = R*Math.sin(time*0);
+				camera.position.y = 1200;
+				camera.position.z = R*Math.cos(time*0);
+
+				camera.lookAt (target);
+				camera.up = new THREE.Vector3(0,1,0);
+
+				renderer.render (scene, camera);
+
+			}
+
+		</script>
+
+	</body>
+</html>

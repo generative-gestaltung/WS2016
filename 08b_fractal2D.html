@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html>
+
+  <body>
+    <canvas id="myCanvas" width="1000" height="1000"></canvas>
+
+    <script>
+
+  		// get the context
+  		var canvas = document.getElementById("myCanvas");
+  		var context = canvas.getContext('2d');
+
+      var MOVE = 0;
+      var MOVE_R = 1;
+      var ROT = 2;
+      var SAVE = 3;
+      var REST = 4;
+      var cmd = [
+        [MOVE_R,10],[MOVE_R,10],[ROT,0.2],[MOVE,10],
+        [ROT, -0.2],[SAVE], [ROT, -0.2], [MOVE_R, 10], [REST]
+      ];
+      var MAX_RECURSIONS = 3;
+      var LEN = 4;
+      var ANGLE = Math.PI/16;
+
+      function d (r) {
+        for (var i=0; i<cmd.length; i++) {
+          if ((cmd[i][0]==MOVE_R && r==MAX_RECURSIONS) | cmd[i][0]==MOVE) {
+                context.moveTo(0,0);
+                context.lineTo(cmd[i][1],0);
+                context.translate(cmd[i][1],0);
+            }
+            if (cmd[i][0]==MOVE_R && r<MAX_RECURSIONS){
+              d (r+1);
+            }
+
+            if (cmd[i][0]==ROT) {
+              context.rotate(cmd[i][1]);
+            }
+
+            if (cmd[i][0]==SAVE) {
+              context.save();
+            }
+
+            if (cmd[i][0]==REST) {
+              context.restore();
+            }
+          }
+      }
+
+
+		  // create 300 polygons with 300 edges
+		  var setup = function() {
+        var N = 1;
+
+
+    		context.fillStyle = "rgba(255,255,255,1.0)";
+    		context.fillRect (0, 0, canvas.width, canvas.height);
+
+        context.save();
+        context.translate(100, 200);
+        context.lineWidth = 1;
+        context.beginPath();
+
+        d(0);
+
+        context.stroke();
+        context.restore();
+      }
+
+      var draw = function() {
+    	 // clear canvas
+        requestAnimationFrame(draw);
+      };
+
+      setup();
+    	draw();
+
+    </script>
+  </body>
+</html>

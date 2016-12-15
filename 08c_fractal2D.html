@@ -1,0 +1,76 @@
+<!DOCTYPE HTML>
+<html>
+
+  <body>
+    <canvas id="myCanvas" width="1000" height="1000"></canvas>
+
+    <script>
+
+  		// get the context
+  		var canvas = document.getElementById("myCanvas");
+  		var context = canvas.getContext('2d');
+
+      var grammarString = "vwv[++++wwv][----wwv]";
+      var MAX_RECURSIONS = 3;
+      var LEN = 4;
+      var ANGLE = Math.PI/16;
+
+      function d (r) {
+        for (var i=0; i<grammarString.length; i++) {
+          if (grammarString[i]=='v') {
+            if (r==MAX_RECURSIONS) {
+                context.moveTo(0,0);
+                context.lineTo(0,-LEN);
+                context.translate(0,-LEN);
+            }
+            else {
+              d (r+1);
+            }
+          }
+          if (grammarString[i]=='w') {
+            context.moveTo(0,0);
+            context.lineTo(0,-LEN);
+            context.translate(0,-LEN);
+          }
+          if (grammarString[i]=="+")
+            context.rotate(ANGLE);
+          if (grammarString[i]=="-")
+            context.rotate(-ANGLE);
+          if (grammarString[i]=="[")
+            context.save();
+          if (grammarString[i]=="]")
+            context.restore();
+        }
+      }
+
+
+		  // create 300 polygons with 300 edges
+		  var setup = function() {
+        var N = 1;
+
+
+    		context.fillStyle = "rgba(255,255,255,1.0)";
+    		context.fillRect (0, 0, canvas.width, canvas.height);
+
+        context.save();
+        context.translate(200, 700);
+        context.lineWidth = 1;
+        context.beginPath();
+
+        d(0);
+
+        context.stroke();
+        context.restore();
+      }
+
+      var draw = function() {
+    	 // clear canvas
+        requestAnimationFrame(draw);
+      };
+
+      setup();
+    	draw();
+
+    </script>
+  </body>
+</html>
