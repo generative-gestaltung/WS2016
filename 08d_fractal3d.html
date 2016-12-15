@@ -36,10 +36,16 @@
 			var ROTX = 2;
 			var ROTY = 3;
 			var ROTZ = 4;
+			var phi = 0.8;
 			var cmd = [
-				[MOVE_R,10], [ROTX,0.2], [MOVE_R,10],[ROTX,-0.2],
-				[ROTX,-0.2], [MOVE_R,10]
+				[MOVE_R,400], [ROTY, phi], [MOVE_R, 400], [ROTY, -phi], [ROTY, -phi],
+				[MOVE_R, 400], [ROTY,phi], [MOVE_R,400]
 			];
+
+				/*, [ROTY,-0.5], [MOVE,400],[ROTY,0.5],
+				[ROTY,0.5], [MOVE,400], [ROTY,-0.5], [MOVE,400]
+			];
+			*/
 			var MAX_RECURSIONS = 3;
 			var LEN = 4;
 			var ANGLE = Math.PI/16;
@@ -65,36 +71,59 @@
 
 			function d (r, elem) {
 
+				var tmpElem = createElem(400);
+				//tmpElem.useQuaternion = true;
+				tmpElem.position.copy(elem.position);
+				tmpElem.quaternion.copy(elem.quaternion);
 
 				for (var i=0; i<cmd.length; i++) {
 
 					// done, create elem
-					if ((cmd[i][0]==MOVE_R && r==MAX_RECURSIONS) | cmd[i][0]==MOVE) {
-						elem.translateX (cmd[i][1]);
-						scene.add(elem);
-						console.log("ADD ELEM");
-					}
-
-					// recursion
-					if (cmd[i][0]==MOVE_R && r<MAX_RECURSIONS){
-						d (r+1,elem);
+					if (cmd[i][0]==MOVE_R) {
+						if (r==MAX_RECURSIONS) {
+							var newElem = createElem(400);
+							newElem.position.copy(tmpElem.position);
+							newElem.quaternion.copy(tmpElem.quaternion);
+							scene.add(newElem);
+							tmpElem.translateX(cmd[i][1]);
+						}
+						else {
+							//tmpElem.translateX (cmd[i][1]);
+							var ret = d(r+1, tmpElem);
+							tmpElem.position.copy(ret.position);
+							tmpElem.quaternion.copy(ret.quaternion);
+						}
 					}
 
 					if (cmd[i][0]==ROTX) {
-						elem.rotateX(cmd[i][1]);
+						tmpElem.translateX(200);
+						tmpElem.rotateX(cmd[i][1]);
+						tmpElem.translateX(-200);
 					}
 
 					if (cmd[i][0]==ROTY) {
-						elem.rotateY(cmd[i][1]);
+						console.log("R");
+						tmpElem.translateX(-200);
+						tmpElem.rotateY(cmd[i][1]);
+						tmpElem.translateX(200);
 					}
 
 					if (cmd[i][0]==ROTZ) {
-						elem.rotateZ(cmd[i][1]);
+						tmpElem.translateX(200);
+						tmpElem.rotateZ(cmd[i][1]);
+						tmpElem.translateX(-200);
 					}
 				}
+				return tmpElem;
 			}
 
 
+			function pMatrix(m) {
+				console.log(m.elements[0]+" "+m.elements[1]+" "+m.elements[2]+" "+m.elements[3]);
+				console.log(m.elements[4]+" "+m.elements[5]+" "+m.elements[6]+" "+m.elements[7])
+				console.log(m.elements[8]+" "+m.elements[9]+" "+m.elements[10]+" "+m.elements[11]);
+				console.log(m.elements[12]+" "+m.elements[13]+" "+m.elements[14]+" "+m.elements[15])
+			}
 
 			function init() {
 
@@ -132,8 +161,17 @@
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
-				var elem = createElem(100);
-				d(1, elem);
+
+				var e0 = createElem(400);
+				e0.rotateY(0.5);
+
+				var e1 = createElem(400);
+				e1.rotateY(0.5);
+				e1.translateX(400);
+
+				//scene.add(e0);
+				//scene.add(e1);
+				d(1, e0);
 
 			}
 
@@ -167,15 +205,16 @@
 
 
 				requestAnimationFrame (animate);
-				var R = 3000;
+				var R = 2500;
 
 				pointLight.position.x = R*Math.sin(time);
 				pointLight.position.y = R*Math.cos(time);
 				pointLight.position.z = 400;
 
-				camera.position.x = R*Math.sin(time*0);
-				camera.position.y = 1200;
-				camera.position.z = R*Math.cos(time*0);
+				target.x = 1000;
+				camera.position.x = 1000; //R*Math.sin(time*0.5)+4000;
+				camera.position.y = 8000;
+				camera.position.z = 1000; //R*Math.cos(time*0.5	)+0;
 
 				camera.lookAt (target);
 				camera.up = new THREE.Vector3(0,1,0);
