@@ -33,7 +33,7 @@
           v_position = positionNew.xyz;
 
           // pass color to fragment shader
-          float h = position.y*0.002 + 0.4;
+          float h = position.y*0.002 + 0.8;
           v_color = vec4(h, h, h, 1.0);
         }
 
@@ -69,12 +69,16 @@
     var bufferTexture = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
 
 
+    var targets0 = [];
+    var targets1 = [];
+
+
     function getHeight(x, y) {
       return h0 (x,y);
     }
 
     function h0 (x, y) {
-      return Math.sin(x*0.03)*Math.sin(y*0.03)*200;
+      return Math.sin(x*0.03)*Math.sin(y*0.03)*40 -200;
     }
 
     function h1 (x, y) {
@@ -130,33 +134,40 @@
 
           var x = (i-1)*W;
           var z =  j*W;
-          var h = getHeight(x, z);
+          var h = h0(x, z);
           geometry.vertices.push(new THREE.Vector3 (x,  h, z));
+          targets0.push(new THREE.Vector3 (x,  h, z));
 
           x = (i-1)*W;
           z =  (j-1)*W;
-          h = getHeight(x, z);
-    	    geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          h = h0(x, z);
+          geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          targets0.push(new THREE.Vector3 (x, h, z));
 
           x = i*W;
           z = (j-1)*W;
-          h = getHeight(x, z);
-    	    geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          h = h0(x, z);
+          geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          targets0.push(new THREE.Vector3 (x, h, z));
 
           x = i*W;
           z = (j-1)*W;
-          h = getHeight(x, z);
-       	  geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          h = h0(x, z);
+          geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          targets0.push(new THREE.Vector3 (x, h, z));
 
           x = i*W;
           z = j*W;
-          h = getHeight(x, z);
-       	  geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          h = h0(x, z);
+          geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          targets0.push(new THREE.Vector3 (x, h, z));
 
           x = (i-1)*W;
           z = j*W;
-          h = getHeight(x, z);
-       	  geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          h = h0(x, z);
+          geometry.vertices.push(new THREE.Vector3 (x, h, z));
+          targets0.push(new THREE.Vector3 (x, h, z));
+
 
           geometry.faces.push (
             new THREE.Face3((i+j*N)*6, (i+j*N)*6+1, (i+j*N)*6+2),
@@ -164,6 +175,52 @@
           );
         }
       }
+
+      var sc = 0;
+      for (var i=N; i>=0; i--) {
+        for (var j=0; j<N; j++) {
+
+          var x = (i-1)*W;
+          var z =  j*W;
+          var h = h1(x, z);
+          targets1.push(new THREE.Vector3 (x*sc,  h, z*sc));
+
+          x = (i-1)*W;
+          z =  (j-1)*W;
+          h = h1(x, z);
+          targets1.push(new THREE.Vector3 (x*sc, h, z*sc));
+
+          x = i*W;
+          z = (j-1)*W;
+          h = h1(x, z);
+          targets1.push(new THREE.Vector3 (x*sc, h, z*sc));
+
+          x = i*W;
+          z = (j-1)*W;
+          h = h1(x, z);
+          targets1.push(new THREE.Vector3 (x*sc, h, z*sc));
+
+          x = i*W;
+          z = j*W;
+          h = h1(x, z);
+          targets1.push(new THREE.Vector3 (x*sc, h, z*sc));
+
+          x = (i-1)*W;
+          z = j*W;
+          h = h1(x, z);
+          targets1.push(new THREE.Vector3 (x*sc, h, z*sc));
+
+
+          geometry.faces.push (
+            new THREE.Face3((i+j*N)*6, (i+j*N)*6+1, (i+j*N)*6+2),
+            new THREE.Face3((i+j*N)*6+3, (i+j*N)*6+4, (i+j*N)*6+5)
+          );
+        }
+      }
+
+
+
+
       mesh = new THREE.Mesh (geometry, material);
       mesh.translateX(-N/2*W);
       mesh.translateZ(-N/2*W);
@@ -171,9 +228,10 @@
     }
 
 
+    var i=0;
     var render = function () {
 
-      var time = performance.now();
+      var time = 100; // performance.now();
       var R = 1400;
       var f = 0.00002;
       camera.position.x = R*Math.sin(time*f);
@@ -183,18 +241,25 @@
       camera.lookAt (new THREE.Vector3 (0,0,0));
 
       mesh.material.uniforms.time.value = time;
-      var t = Math.sin(time*f)*0.5+0.5;
 
       for (var i=0; i<N; i++) {
         for (var j=0; j<N; j++) {
+
+          // spatial blend
+          var t = Math.sin(time*0.0004+noise.simplex2(i,j)*0.4)*2;
+          t = constrain(t,0,1);
           var ind = j*N+i;
 
           for (var v=0; v<6; v++) {
-            var vertex = mesh.geometry.vertices[ind*6+v];
 
-            vertex.y  = blend (h0(vertex.x, vertex.z),
-                               h1(vertex.x, vertex.z),
-                               t);
+            var newPos = new THREE.Vector3();
+            newPos.x = blend(targets0[ind*6+v].x, targets1[ind*6+v].x, t);
+            newPos.y = blend(targets0[ind*6+v].y, targets1[ind*6+v].y, t);
+            newPos.z = blend(targets0[ind*6+v].z, targets1[ind*6+v].z, t);
+
+            mesh.geometry.vertices[ind*6+v].x = newPos.x;
+            mesh.geometry.vertices[ind*6+v].y = newPos.y + Math.sin(time*0.01+i*0.1)*200;
+            mesh.geometry.vertices[ind*6+v].z = newPos.z;
           }
         }
       }

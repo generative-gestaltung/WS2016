@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #000000;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="three.min.js"></script>
+		<script src="gg_util_perlin.js"></script>
+
+		<script>
+
+			var camera, scene, renderer;
+
+			var directionalLight;
+			var pointLight;
+			var target;
+
+
+			var N_PARTICLES = 15000;
+      var particles;
+			var forces;
+
+			var Force = function(center) {
+				this.center = center;
+			};
+			Force.prototype.getForce = function (pos) {
+				return new THREE.Vector3(0,0,0);
+			}
+
+      var Particle = function (mesh, startPos, startVel) {
+        this.position = startPos;
+        this.velocity = startVel;
+
+        this.mesh = mesh;
+      }
+
+      Particle.prototype.update = function (dt) {
+
+        //update velocity with forces
+        for (var i=0; i<forces.length; i++) {
+          this.velocity.add(forces[i].getForce(this.position));
+        }
+
+				// damping
+				var dampen = 0.99;
+				this.velocity.multiply(new THREE.Vector3(dampen, dampen, dampen));
+
+        // update position
+				var v = this.velocity.clone();
+				v.multiply(new THREE.Vector3(dt,dt,dt));
+        this.position.add(v);
+
+        this.mesh.position.set(this.position.x, this.position.y, this.position.z);
+      }
+
+
+			init();
+			animate();
+
+
+
+			function createParticles() {
+
+				particles = [];
+				forces = [];
+
+
+				var W = 5000;
+				for (var i=0; i<10; i++) {
+				forces[i] = new Force(new THREE.Vector3(Math.random()*W-W/2,
+																							  Math.random()*W-W/2,
+																								Math.random()*W-W/2));
+
+				forces[i].getForce = function (pos) {
+
+
+					// calculate distance to attractor
+					var d = pos.distanceTo(this.center);
+					d *= 0.001;
+
+					if (d<1)
+						d=1;
+					// calculate dir to attractor
+					var dir = this.center.clone();
+					dir.sub(pos);
+					dir.normalize();
+
+
+					// return direction vector scaled by squared distance
+					return new THREE.Vector3(dir.x / d /d,
+						                       dir.y / d /d,
+																	 dir.z / d /d);
+
+					/*
+					var sc = 0.1;
+					return new THREE.Vector3 (noise.simplex3 (sc*pos.x, sc*pos.y, sc*pos.z),
+																	  noise.simplex3 (sc*pos.x, sc*pos.y, sc*pos.z+500),
+																	  noise.simplex3 (sc*pos.x, sc*pos.y, sc*pos.z+1000));
+					*/
+				}
+			}
+
+				var material = new THREE.MeshLambertMaterial({color: 0xffffff, shading: THREE.FlatShading});
+
+				for (var i=0; i<N_PARTICLES; i++) {
+          var h = 10;
+					var geometry = new THREE.BoxBufferGeometry (h, h, h);
+					var mesh = new THREE.Mesh (geometry, material);
+
+					var W = 4000;
+
+					var R = Math.random()*30+10;
+					var phi = Math.random()*Math.PI*2;
+
+          particles[i] = new Particle (mesh,
+                                       new THREE.Vector3(Math.random()*W-W/2,
+                                                         Math.random()*W-W/2,
+                                                         Math.random()*W-W/2),
+
+                                       new THREE.Vector3 (0,0,0));
+					scene.add (mesh);
+				}
+			}
+
+      function updateParticles(dt) {
+        for (var i=0; i<N_PARTICLES; i++) {
+          particles[i].update(dt);
+        }
+      }
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.y = 700;
+
+				scene = new THREE.Scene();
+
+        createParticles();
+
+				directionalLight = new THREE.DirectionalLight(0x00ffff, 1);
+				directionalLight.position.x = Math.random() - 0.5;
+				directionalLight.position.y = Math.random() - 0.5;
+				directionalLight.position.z = Math.random() - 0.5;
+				directionalLight.position.normalize();
+
+				pointLight = new THREE.PointLight( 0xff0000, 1, 0 );
+				scene.add( pointLight );
+				scene.add (directionalLight);
+
+				var ambientLight = new THREE.AmbientLight (0x333333); // soft white light
+				scene.add (ambientLight);
+
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+
+      var time = 0;
+      var lastTime = 0;
+
+			function animate() {
+
+        var time = performance.now() / 1000.0;
+        updateParticles (time - lastTime);
+        lastTime = time;
+
+				requestAnimationFrame (animate);
+
+				var R = 1000;
+				var f = 0;
+				camera.position.x = R*Math.sin(time*f);
+				camera.position.z = R*Math.cos(time*f);
+
+				camera.lookAt (new THREE.Vector3(0,0,0));
+				camera.up = new THREE.Vector3(0,1,0);
+
+				renderer.render( scene, camera );
+			}
+
+		</script>
+
+	</body>
+</html>
