@@ -1,0 +1,214 @@
+<html>
+  <body>
+
+    <script src="three.min.js"></script>
+    <script src="gg_util_perlin.js"></script>
+
+      <script id="vertexShader" type="x-shader/x-vertex">
+
+        // comes with framework
+      //  uniform mat4 modelViewMatrix;
+      //  uniform mat4 projectionMatrix;
+
+        // user defined uniforms, values are passed in runtime
+        uniform vec2 offset;
+        uniform vec2 size;
+        uniform float time;
+
+        /*
+        // user defined attributes
+        attribute vec3 position;
+        attribute vec4 color;
+        attribute vec3 normal;
+        attribute vec2 uv;
+*/
+        // data to be passed to fragment shader
+        varying vec3 v_position;
+        varying vec4 v_color;
+        varying vec2 v_pos;
+
+        void main() {
+
+          vec4 positionNew = vec4 (position, 1.0);
+
+          // calcuate pixel position on screen and pass to fragment shader
+          gl_Position = projectionMatrix * modelViewMatrix * positionNew;
+
+          // pass world coords position to fragment shader
+          v_position = positionNew.xyz;
+
+          // pass color to fragment shader
+          v_color = vec4(time, 1.0, 1.0, 1.0);
+
+          v_pos = vec2(uv*size) + offset;
+        }
+
+        </script>
+
+        <script id="fragmentShader" type="x-shader/x-fragment">
+
+          uniform float centersX[10];
+          uniform float centersY[10];
+
+          precision mediump float;
+          precision mediump int;
+
+          // input from vertex shader
+          varying vec3 v_position;
+          varying vec4 v_color;
+
+          varying vec2 v_pos;
+
+          void main() {
+            float t = v_color.x;
+            float dMin = 999999.0;
+            float dMin2 = 999999.0;
+            int found = 0;
+
+            for (int i=0; i<10; i++) {
+              float d = distance(v_pos, vec2(centersX[i], centersY[i]));
+              if (d<dMin) {
+                dMin = d;
+                found = i;
+              }
+            }
+
+            for (int i=0; i<10; i++) {
+              float d = distance(v_pos, vec2(centersX[i], centersY[i]));
+              if (d<dMin2 && d>dMin) {
+                dMin2 = d;
+              }
+            }
+            float d = distance(v_pos, vec2(centersX[0], centersY[0]));
+
+            float b = (dMin2-dMin)*0.004;
+            gl_FragColor = vec4(b*sin(float(found)), b*sin(float(found)+1.0), b, 1.0);
+            //gl_FragColor = vec4(sin(v_pos.x*0.01*v_color.x*0.01*centersX[0]*0.01), sin(v_pos.y*0.01*v_color.x*0.02), 1.0, 1.0);
+          }
+        </script>
+
+    <script>
+
+    var scene;
+    var camera;
+    var renderer;
+
+    var c_arrayX = [];
+    var c_arrayY = [];
+
+
+    function init_gl() {
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera (70, window.innerWidth/window.innerHeight, 0.1, 50000);
+
+      // default params
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize (window.innerWidth, window.innerHeight);
+      document.body.appendChild (renderer.domElement);
+    }
+
+    var Screen = function (x, y, w, h) {
+
+      this.x = x;
+      this.y = y;
+      this.w = w;
+      this.h = h;
+
+
+      this.material = new THREE.ShaderMaterial ({
+                            uniforms: {
+                              time: {value: 1.0 },
+                              offset: {value: new THREE.Vector2(0,0)},
+                              size: {value: new THREE.Vector2(0,0)},
+                              centersX: {value: c_arrayX},
+                              centersY: {value: c_arrayY}
+                            },
+                            vertexShader: document.getElementById ('vertexShader').textContent,
+                            fragmentShader: document.getElementById ('fragmentShader').textContent,
+                            side: THREE.DoubleSide,
+                            transparent: true
+                        });
+
+      this.geometry = new THREE.Geometry();
+
+      this.geometry.vertices.push(new THREE.Vector3 (x, y, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x+w, y, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x+w, y+h, 0));
+
+      this.geometry.faceVertexUvs[0].push([
+        new THREE.Vector2(0,0),
+        new THREE.Vector2(1,0),
+        new THREE.Vector2(1,1)
+      ]);
+
+      this.geometry.vertices.push(new THREE.Vector3 (x, y, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x+w, y+h, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x, y+h, 0));
+
+      this.geometry.faceVertexUvs[0].push([
+        new THREE.Vector2(0,0),
+        new THREE.Vector2(1,1),
+        new THREE.Vector2(0,1)
+      ]);
+
+      this.geometry.faces.push (
+        new THREE.Face3(0,1,2),
+        new THREE.Face3(3,4,5)
+      );
+      this.mesh = new THREE.Mesh (this.geometry, this.material);
+
+      scene.add(this.mesh);
+    }
+
+
+    var w = 200;
+    var N = 4;
+    var screens = [];
+    function init_model() {
+      for (var i=0; i<N; i++) {
+        screens[i] = [];
+        for (var j=0; j<N; j++) {
+          screens[i][j] = new Screen (i*w-(N/2)*w, j*w-(N/2)*w, w*0.96, w*0.96);
+        }
+      }
+    }
+
+    var render = function () {
+
+      camera.position.x = 0;
+      camera.position.y = 0;
+      camera.position.z = 1000;
+
+      camera.lookAt (new THREE.Vector3 (0,0,0));
+
+      var time = performance.now();
+
+      for (var i=0; i<10; i++) {
+        c_arrayX[i] = noise.simplex2(time*0.0002+i*400,0)*w*2;
+        c_arrayY[i] = noise.simplex2(time*0.0002+i*700,1000)*w*2;
+      }
+
+
+      for (var i=0; i<N; i++) {
+        for (var j=0; j<N; j++) {
+          var s = screens[i][j];
+          screens[i][j].material.uniforms.time.value = time;
+          screens[i][j].material.uniforms.offset.value = new THREE.Vector2(s.x, s.y);
+          screens[i][j].material.uniforms.size.value = new THREE.Vector2(s.w, s.h);
+          screens[i][j].material.uniforms.centersX.value = c_arrayX;
+          screens[i][j].material.uniforms.centersY.value = c_arrayY;
+        }
+      }
+
+      requestAnimationFrame (render);
+      renderer.render (scene, camera);
+    };
+
+    init_gl();
+    init_model();
+    render();
+
+    </script>
+  </body>
+  </html>

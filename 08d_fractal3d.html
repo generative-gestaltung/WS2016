@@ -36,25 +36,38 @@
 			var ROTX = 2;
 			var ROTY = 3;
 			var ROTZ = 4;
-			var phi = 0.8;
+			var PUSH = 5;
+			var POP = 6;
+			var phi = 0.4;
+			var L = 40;
 			var cmd = [
-				[MOVE_R,400], [ROTY, phi], [MOVE_R, 400], [ROTY, -phi], [ROTY, -phi],
-				[MOVE_R, 400], [ROTY,phi], [MOVE_R,400]
+				[MOVE_R],
+				[PUSH],
+				[ROTX,-1.5],
+				[ROTY,-0.5],
+				[MOVE_R],
+				[POP],
+				[MOVE_R],
+				[PUSH],
+				[ROTY,0.5],
+				[MOVE_R],
+				[POP],
+				[MOVE_R],
+				[PUSH],
+				[ROTY,-0.5],
+				[ROTX,0.5],
+				[MOVE_R],
+				[POP],
+				[MOVE_R]
 			];
 
 				/*, [ROTY,-0.5], [MOVE,400],[ROTY,0.5],
 				[ROTY,0.5], [MOVE,400], [ROTY,-0.5], [MOVE,400]
 			];
 			*/
-			var MAX_RECURSIONS = 3;
+			var MAX_RECURSIONS = 4;
 			var LEN = 4;
 			var ANGLE = Math.PI/16;
-
-			init();
-			animate();
-
-
-
 
 			function createElem (len) {
 
@@ -62,16 +75,17 @@
 					return;
 				elemCnt += 1;
 
-				var geometry = new THREE.BoxBufferGeometry (len, 15, 15);
+				var geometry = new THREE.BoxBufferGeometry (len, 4, 4);
 				var mesh = new THREE.Mesh (geometry, material);
 
 				return mesh;
 			}
 
 
+			var stack = [];
 			function d (r, elem) {
 
-				var tmpElem = createElem(400);
+				var tmpElem = createElem(L);
 				//tmpElem.useQuaternion = true;
 				tmpElem.position.copy(elem.position);
 				tmpElem.quaternion.copy(elem.quaternion);
@@ -81,11 +95,11 @@
 					// done, create elem
 					if (cmd[i][0]==MOVE_R) {
 						if (r==MAX_RECURSIONS) {
-							var newElem = createElem(400);
+							var newElem = createElem(L);
 							newElem.position.copy(tmpElem.position);
 							newElem.quaternion.copy(tmpElem.quaternion);
 							scene.add(newElem);
-							tmpElem.translateX(cmd[i][1]);
+							tmpElem.translateX(L);
 						}
 						else {
 							//tmpElem.translateX (cmd[i][1]);
@@ -96,26 +110,48 @@
 					}
 
 					if (cmd[i][0]==ROTX) {
-						tmpElem.translateX(200);
+						tmpElem.translateX(L/2);
 						tmpElem.rotateX(cmd[i][1]);
-						tmpElem.translateX(-200);
+						tmpElem.translateX(-L/2);
 					}
 
 					if (cmd[i][0]==ROTY) {
 						console.log("R");
-						tmpElem.translateX(-200);
+						tmpElem.translateX(-L/2);
 						tmpElem.rotateY(cmd[i][1]);
-						tmpElem.translateX(200);
+						tmpElem.translateX(L/2);
 					}
 
 					if (cmd[i][0]==ROTZ) {
-						tmpElem.translateX(200);
+						tmpElem.translateX(L/2);
 						tmpElem.rotateZ(cmd[i][1]);
-						tmpElem.translateX(-200);
+						tmpElem.translateX(-L/2);
+					}
+
+					if (cmd[i][0]==PUSH) {
+						var saveElem = createElem(1);
+						saveElem.position.copy(tmpElem.position);
+						saveElem.quaternion.copy(tmpElem.quaternion);
+						stack.push(saveElem);
+					}
+
+					if (cmd[i][0]==POP) {
+						var saveElem = stack.pop();
+						tmpElem.position.copy(saveElem.position);
+						tmpElem.quaternion.copy(saveElem.quaternion);
 					}
 				}
 				return tmpElem;
 			}
+
+
+			init();
+			animate();
+
+
+
+
+
 
 
 			function pMatrix(m) {
@@ -163,14 +199,8 @@
 
 
 				var e0 = createElem(400);
-				e0.rotateY(0.5);
-
-				var e1 = createElem(400);
-				e1.rotateY(0.5);
-				e1.translateX(400);
-
-				//scene.add(e0);
-				//scene.add(e1);
+				e0.translateX(0);
+				e0.rotateZ(Math.PI/2);
 				d(1, e0);
 
 			}
@@ -205,17 +235,18 @@
 
 
 				requestAnimationFrame (animate);
-				var R = 2500;
+				R = 1000;
 
 				pointLight.position.x = R*Math.sin(time);
 				pointLight.position.y = R*Math.cos(time);
 				pointLight.position.z = 400;
 
-				target.x = 1000;
-				camera.position.x = 1000; //R*Math.sin(time*0.5)+4000;
-				camera.position.y = 8000;
-				camera.position.z = 1000; //R*Math.cos(time*0.5	)+0;
 
+				camera.position.x = R*Math.sin(time*0.5);
+				camera.position.y = 3500;
+				camera.position.z = R*Math.cos(time*0.5)+0;
+
+				target.y = 2400;
 				camera.lookAt (target);
 				camera.up = new THREE.Vector3(0,1,0);
 
