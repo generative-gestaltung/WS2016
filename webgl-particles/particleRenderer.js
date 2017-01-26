@@ -7,7 +7,7 @@ var ParticleRenderer = function (N) {
 
   for (var i=0; i<N; i++) {
     for (var j=0; j<N; j++) {
-      this.mesh.addQuad (i*2.0/N-1, j*2.0/N-1, 0.0, 0.0);
+      this.mesh.addQuadZ (i*2.0/N-1, j*2.0/N-1, i%4, 0.0, 0.0);
     }
   }
 

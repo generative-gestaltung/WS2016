@@ -68,23 +68,32 @@ ScreenRenderer.prototype.initTextureFramebuffer = function() {
 
 
 
-ScreenRenderer.prototype.draw = function (inputTexture, renderToTexture) {
+ScreenRenderer.prototype.draw = function (inputTextureA, inputTextureB, renderToTexture) {
 
     this.time += 0.01;
     gl.useProgram (this.shaderProgram);
-    if (renderToTexture)
+
+    if (renderToTexture){
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.rttFramebuffer);
-    else
+    }
+    else{
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    }
 
     gl.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
     gl.enableVertexAttribArray(this.shaderProgram.vertexNormalAttribute);
     gl.enableVertexAttribArray(this.shaderProgram.textureCoordAttribute);
 
-    if (inputTexture!=null) {
+    if (inputTextureA!=null) {
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, inputTexture);
-      gl.uniform1i(this.shaderProgram.samplerUniform, 0);
+      gl.bindTexture(gl.TEXTURE_2D, inputTextureA);
+      gl.uniform1i(this.shaderProgram.samplerUniform0, 0);
+    }
+
+    if (inputTextureB!=null) {
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, inputTextureB);
+      gl.uniform1i(this.shaderProgram.samplerUniform1, 1);
     }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);

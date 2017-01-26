@@ -66,7 +66,8 @@ function initShaders (shaderProgram, v, f) {
       shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
       shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
       shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
-      shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+      shaderProgram.samplerUniform0 = gl.getUniformLocation(shaderProgram, "uSampler0");
+      shaderProgram.samplerUniform1 = gl.getUniformLocation(shaderProgram, "uSampler1");
 
       gl.disableVertexAttribArray(shaderProgram.vertexPositionAttribute);
       gl.disableVertexAttribArray(shaderProgram.vertexNormalAttribute);

@@ -4,7 +4,9 @@
 <title>Learning WebGL &mdash; lesson 16</title>
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
+<!--
 <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+-->
 <script type="text/javascript" src="webgl-utils.js"></script>
 <script type="text/javascript" src="mesh.js"></script>
 <script type="text/javascript" src="shader.js"></script>
@@ -13,28 +15,29 @@
 
 
 <script id="passA_vertex" type="x-shader/x-vertex">
-attribute vec3 aVertexPosition;
-attribute vec3 aVertexNormal;
-attribute vec2 aTextureCoord;
+  attribute vec3 aVertexPosition;
+  attribute vec3 aVertexNormal;
+  attribute vec2 aTextureCoord;
 
-varying vec2 vTextureCoord;
+  varying vec2 vTextureCoord;
 
-void main(void) {
-    gl_Position = vec4(aVertexPosition, 1.0);
-    vTextureCoord = aTextureCoord;
-}
+  void main(void) {
+      gl_Position = vec4(aVertexPosition, 1.0);
+      vTextureCoord = aTextureCoord;
+  }
 </script>
 
 
 <script id="passA_fragment" type="x-shader/x-fragment">
-precision mediump float;
+  precision mediump float;
 
-varying vec2 vTextureCoord;
-uniform sampler2D uSampler;
+  varying vec2 vTextureCoord;
+  uniform sampler2D uSampler0;
+  uniform sampler2D uSampler1;
 
-void main(void) {
-  gl_FragColor = vec4(texture2D(uSampler, vTextureCoord).xyz, 1.0) + vec4(0.0, 0.0, 0.0, 0.0);
-}
+  void main(void) {
+    gl_FragColor = vec4(texture2D(uSampler0, vTextureCoord).xyz, 1.0) + vec4(0.0, 0.0, 0.0, 0.0);
+  }
 </script>
 
 
@@ -57,10 +60,16 @@ void main(void) {
 precision mediump float;
 
 varying vec2 vTextureCoord;
-uniform sampler2D uSampler;
+uniform sampler2D uSampler0;
+uniform sampler2D uSampler1;
 
 void main(void) {
-  gl_FragColor = vec4(texture2D(uSampler, vTextureCoord).xyz, 1.0) + vec4(0.001, 0.0, 0.0, 0.0);
+  vec3 pos = texture2D(uSampler0, vTextureCoord).xyz;
+  vec3 vel = texture2D(uSampler1, vTextureCoord).xyz;
+
+
+  vec3 newPos = pos+vel*0.001 - vec3(0,0,0.01);
+  gl_FragColor = vec4(newPos, 1.0);
 }
 </script>
 
@@ -75,20 +84,25 @@ void main(void) {
     uniform sampler2D uSampler;
 
     void main(void) {
-        vPosition = texture2D (uSampler, aVertexPosition.xy);//vec4(aVertexPosition, 1.0);
-        vPosition.xy += aTextureCoord.xy*0.01;
-        gl_Position = vPosition;
+        vPosition = texture2D (uSampler, aVertexPosition.xy);
+
+        if (vPosition.z < 0.0)  vPosition.z = 0.0;
+        float lifetime = vPosition.z;
+
+        vPosition.xy += aTextureCoord.xy*(0.004 + aVertexPosition.z*0.004)*lifetime;
+
+        gl_Position = vec4 (vPosition.xy, 0.0, 1.0);
     }
 </script>
 
 <script id="render_particles_fragment" type="x-shader/x-fragment">
     precision mediump float;
 
-    varying vec2 vTextureCoord;
+    varying vec4 vPosition;
     uniform sampler2D uSampler;
 
     void main(void) {
-      gl_FragColor = vec4(0.5, 0.0, 0.5, 1.0);
+      gl_FragColor = vec4(vPosition.z*0.1, vPosition.z*0.1, vPosition.z*0.1, 1.0);
     }
 </script>
 
@@ -105,20 +119,22 @@ var passRender;
 
 var texturePos;
 var textureVel;
+var textureInfo;
 
-var W = 512;
-var H = 512;
+var W = 1024;
+var H = 1024;
 
 var float_textures_ext;
 var color_buffer_float_ext;
-function initBuffers() {
 
+
+function initBuffers() {
     var tmp = [];
     for (var i=0; i<W; i++) {
       for (var j=0; j<H; j++) {
-        tmp.push(i/W*2-1);
-        tmp.push (j/H*2-1); //j*0.0025-0.3);
-        tmp.push (0);
+        tmp.push((i/W*2-1)*0.5);
+        tmp.push ((j/H*2-1)*0.5); //j*0.0025-0.3);
+        tmp.push (Math.random()*10);
         tmp.push (1.0);
       }
     }
@@ -131,6 +147,30 @@ function initBuffers() {
     gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA,
                    W, H,
                    0, gl.RGBA, gl.FLOAT, posData);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+
+    tmp = [];
+    for (var i=0; i<W; i++) {
+      for (var j=0; j<H; j++) {
+        tmp.push (Math.random()-0.5);
+        tmp.push (Math.random()-0.5); //j*0.0025-0.3);
+        tmp.push (0);
+        tmp.push (1.0);
+      }
+    }
+    var velData = new Float32Array(tmp);
+
+
+    textureVel = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, textureVel);
+
+    gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA,
+                   W, H,
+                   0, gl.RGBA, gl.FLOAT, velData);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -151,44 +191,6 @@ function initBuffers() {
         }
     }
 
-
-    var mvMatrix = mat4.create();
-    var mvMatrixStack = [];
-    var pMatrix = mat4.create();
-
-    function mvPushMatrix() {
-        var copy = mat4.create();
-        mat4.set(mvMatrix, copy);
-        mvMatrixStack.push(copy);
-    }
-
-    function mvPopMatrix() {
-        if (mvMatrixStack.length == 0) {
-            throw "Invalid popMatrix!";
-        }
-        mvMatrix = mvMatrixStack.pop();
-    }
-
-    function setMatrixUniforms (shaderProgram) {
-        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
-
-        var normalMatrix = mat3.create();
-        mat4.toInverseMat3(mvMatrix, normalMatrix);
-        mat3.transpose(normalMatrix);
-        gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normalMatrix);
-    }
-
-    function degToRad(degrees) {
-        return degrees * Math.PI / 180;
-    }
-
-
-    var laptopVertexPositionBuffer;
-    var laptopVertexNormalBuffer;
-    var laptopVertexTextureCoordBuffer;
-    var laptopVertexIndexBuffer;
-
     var time = 0;
 
 
@@ -196,14 +198,15 @@ function initBuffers() {
 
     function drawScene() {
 
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        passA.draw (texturePos, null, true);
 
-        passA.draw (texturePos, true);
-        passB.draw (passA.rttTexture, true);
+        passB.draw (passA.rttTexture, textureVel, true);
         texturePos = passB.rttTexture;
 
         passRender.draw(passB.rttTexture);
         //passRender.draw(texturePos);
+
     }
 
 
@@ -231,7 +234,7 @@ function initBuffers() {
         color_buffer_float_ext = gl.getExtension('WEBGL_color_buffer_float');
         float_textures_ext = gl.getExtension('OES_texture_float');
 
-        console.log(color_buffer_float_ext);
+
         shaderprogramB = gl.createProgram();
         shaderProgramA = gl.createProgram();
 
@@ -245,7 +248,7 @@ function initBuffers() {
         passB = new ScreenRenderer (0,0, W, H, shaderprogramB);
         passB.initTextureFramebuffer();
 
-        passRender = new ParticleRenderer(100);
+        passRender = new ParticleRenderer(103);
 
         initBuffers();
 
@@ -262,7 +265,7 @@ function initBuffers() {
 
 
 <body onload="webGLStart();">
-    <canvas id="lesson16-canvas" style="border: none;" width="512" height="512"></canvas>
+    <canvas id="lesson16-canvas" style="border: none;" width="1024" height="1024"></canvas>
 </body>
 
 </html>
