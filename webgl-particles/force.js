@@ -21,8 +21,8 @@ var target_force_fragment = `
 
   uniform sampler2D uSampler0;
   uniform sampler2D uSampler1;
-  uniform sampler2D uSampler2;
-  uniform sampler2D uSampler3;
+  //uniform sampler2D uSampler2;
+  //uniform sampler2D uSampler3;
 
   void main(void) {
     vec3 pos = texture2D (uSampler0, vTextureCoord).xyz;
@@ -31,14 +31,13 @@ var target_force_fragment = `
     vec3 dir = pos - force;
     float d = length(dir);
     float sign = 1.0;
-    if (d<0.4) {
-      d = 0.4;
+    if (d<1.0) {
+      d = 1.0;
       //sign = -1.0;
     }
-    vec3 f = sign * dir / d / d * 1.0;1;
+    vec3 f = sign * dir / d / d  * 15.0;
 
 
     gl_FragColor = vec4 (f, 1.0);
   }
 `;
-

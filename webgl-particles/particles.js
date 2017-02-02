@@ -59,7 +59,7 @@
       vec3 vel = texture2D (uSampler0, vTextureCoord).xyz;
       vec3 acc = texture2D (uSampler1, vTextureCoord).xyz;
 
-      vel = (vel + acc*0.0002*uDt)*0.5;
+      vel = (vel + acc*0.01)*0.90;
       gl_FragColor = vec4 (vel, 1.0);
     }
   `;
@@ -94,7 +94,7 @@
       vec3 vel = texture2D(uSampler1, vTextureCoord).xyz;
 
 
-      vec3 newPos = pos + vel*uDt*0.01;
+      vec3 newPos = pos + vel*0.01;// + vel*uDt*0.01;
       gl_FragColor = vec4(newPos, 1.0);
     }
   `;
@@ -111,7 +111,7 @@
 
   this.passVel.shaderProgram.uDt = gl.getUniformLocation(this.passVel.shaderProgram, "uDt");
   this.passPos.shaderProgram.uDt = gl.getUniformLocation(this.passPos.shaderProgram, "uDt");
-  
+
   this.passVel.updateUniforms = function() {
     gl.uniform1f(this.shaderProgram.uDt, dt);
   }
@@ -119,11 +119,11 @@
   this.passPos.updateUniforms = function() {
     gl.uniform1f(this.shaderProgram.uDt, dt);
   }
-  
+
   this.passRender;
 
   this.texturePos;
-  this.textureVel; 
+  this.textureVel;
   this.textureInfo;
 
   this.W = 1024;
@@ -131,7 +131,7 @@
 
   this.float_textures_ext;
   this.color_buffer_float_ext;
-  
+
   this.texturePos = createTexture (initPositions, 4096, 1024, 1024);
   this.textureVel = createTexture (initVelocities, 4096, 1024, 1024);
 }

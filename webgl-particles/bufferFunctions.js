@@ -44,12 +44,32 @@ function pos2 (buf, N) {
   var rep = 65;
   for (var i=0; i<N; i++) {
 
-    var ph = i/N*rep*Math.PI;
-    var A = 0.2;
-    var x = sinp(ph+Math.PI, 2)*A;
-    var y = sinp(ph+Math.PI/2, 2)*A;
+    var ph = 20*i/N*Math.PI; ///N*rep*Math.PI;
+    var A = 0.2+i*0.0001;
+    var x = Math.sin(ph+Math.PI/*, 2*/)*A;
+    var y = Math.cos(ph+Math.PI/*/2, 2*/)*A;
     pos (buf, i, x, y);
   }
+}
+
+
+
+function posRand (buf, N) {
+
+  for (var i=0; i<N; i++) {
+    var ph = 40*i/N*Math.PI; ///N*rep*Math.PI;
+    var A = 0.2+i*0.00001;
+    var x = Math.sin(ph+Math.PI)*A;
+    var y = Math.cos(ph+Math.PI)*A;
+    pos (buf, i, x, y);
+  }
+  /*
+  for (var i=0; i<N; i++) {
+    var x = Math.random();
+    var y = Math.random();
+    pos (buf, i, x, y);
+  }
+  */
 }
 
 
@@ -87,15 +107,6 @@ function pos2 (buf, N) {
       }
     }
 
-function posRand (buf, N) {
-  for (var i=0; i<N; i++) {
-    var x = Math.random()*2-1;
-    var y = Math.random()*2-1;
-    pos (buf, i*2, x, y);
-    pos (buf, i*2+1, x+Math.random()*0.01-0.005, y+Math.random()*0.01-0.005);
-  }
-}
-
 function posZero (buf, N) {
   for (var i=0; i<N; i++) {
     pos (buf, i, 0, 0);
@@ -104,10 +115,19 @@ function posZero (buf, N) {
 
 function posNoise (buf, N) {
   for (var i=0; i<N; i++) {
-    var x = Math.sin(i*0.01)*0.4 + Math.sin(i*0.1)*0.2;
-    var y = Math.sin(i*0.01+Math.PI/2)*0.4 + Math.sin(i*0.2)*0.2;
-    x = Math.round(x*20)/20;
-    y +=  Math.sin(i*0.001)*0.02;;
+
+    var A = 0.1 + (i%400)/2000;
+    var phi = i/N*2*Math.PI;
+    var x = A*(1-Math.cos(phi*2))*Math.cos(phi);
+    var y = A*(1-Math.cos(phi))*Math.sin(phi);
+    /*
+    var ph0 = i*0.01;
+    ph0 = Math.floor(ph0*4)/4;
+    var x = Math.sin(ph0)*0.4 + Math.sin(i*0.1)*0.02;
+    var y = Math.sin(ph0+Math.PI/2)*0.4 + Math.sin(i*0.2)*0.02;
+    //y = Math.round(y*15)/15;
+    //y +=  Math.sin(i*0.001)*0.02;;
+    */
     pos (buf, i, x, y); //Math.random()*2-1, Math.random()*2-1);
   }
 }

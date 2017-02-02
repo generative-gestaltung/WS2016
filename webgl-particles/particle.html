@@ -27,6 +27,7 @@
   var textureTargetA;
   var textureTargetB;
   var textureTargetC;
+  var textureTargetD;
 
 
   function initGL(canvas) {
@@ -49,21 +50,23 @@
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     var target = particles.texturePos;
-    if (time>1)
+    if (time>3)
       target = textureTargetA;
-    
-    if (time>4)
-      target = textureTargetB;
+
     if (time>8)
+      target = textureTargetB;
+
+    if (time>12)
       target = textureTargetC;
-  
+
+    if (time>15)
+      target = textureTargetD;
+
 
 
     targetForce.draw ([target, particles.texturePos], true);
-
     particles.update (targetForce.rttTexture, dt);
-     particleRenderer.draw (particles.texturePos);
-
+    particleRenderer.draw (particles.texturePos);
   }
 
 
@@ -91,15 +94,17 @@
         color_buffer_float_ext = gl.getExtension('WEBGL_color_buffer_float');
         float_textures_ext = gl.getExtension('OES_texture_float');
 
-        particles = new Particles (pos2, posZero, 4096*2);
-        particleRenderer = new ParticleRenderer(4096*2);
+        var N = 65336 ;
+        particles = new Particles (pos2, posZero, N*2);
+        particleRenderer = new ParticleRenderer(N*2);
 
-        textureTargetA = createTexture (pos1, 4096, 1024, 1024);
-        textureTargetB = createTexture (pos0, 4096, 1024, 1024);
-        textureTargetC = createTexture (posNoise, 4096, 1024, 1024);
+        textureTargetA = createTexture (posNoise, N, 1024, 1024);
+        textureTargetB = createTexture (pos1, N, 1024, 1024);
+        textureTargetC = createTexture (pos0, N, 1024, 1024);
+        textureTargetD = createTexture (posNoise, N, 1024, 1024);
 
         targetForce = new TextureRenderer (0, 0, 1024, 1024,
-                                           new Shader2 (target_force_vertex, 
+                                           new Shader2 (target_force_vertex,
                                                         target_force_fragment));
 
 

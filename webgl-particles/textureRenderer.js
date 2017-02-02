@@ -62,8 +62,8 @@ var TextureRenderer = function (x, y, w, h, shader) {
 
   this.shaderProgram.samplerUniform0 = gl.getUniformLocation(this.shaderProgram, "uSampler0");
   this.shaderProgram.samplerUniform1 = gl.getUniformLocation(this.shaderProgram, "uSampler1");
-  this.shaderProgram.samplerUniform2 = gl.getUniformLocation(this.shaderProgram, "uSampler2");
-  this.shaderProgram.samplerUniform3 = gl.getUniformLocation(this.shaderProgram, "uSampler3");
+  //this.shaderProgram.samplerUniform2 = gl.getUniformLocation(this.shaderProgram, "uSampler2");
+  //this.shaderProgram.samplerUniform3 = gl.getUniformLocation(this.shaderProgram, "uSampler3");
 
   this.createUniforms();
 }
