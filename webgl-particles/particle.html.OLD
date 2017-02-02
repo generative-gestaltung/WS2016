@@ -1,0 +1,271 @@
+<html>
+
+<head>
+<title>Learning WebGL &mdash; lesson 16</title>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+<!--
+<script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+-->
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="mesh.js"></script>
+<script type="text/javascript" src="shader.js"></script>
+<script type="text/javascript" src="particleRenderer.js"></script>
+<script type="text/javascript" src="screenRenderer.js"></script>
+
+
+<script id="passA_vertex" type="x-shader/x-vertex">
+  attribute vec3 aVertexPosition;
+  attribute vec3 aVertexNormal;
+  attribute vec2 aTextureCoord;
+
+  varying vec2 vTextureCoord;
+
+  void main(void) {
+      gl_Position = vec4(aVertexPosition, 1.0);
+      vTextureCoord = aTextureCoord;
+  }
+</script>
+
+
+<script id="passA_fragment" type="x-shader/x-fragment">
+  precision mediump float;
+
+  varying vec2 vTextureCoord;
+  uniform sampler2D uSampler0;
+  uniform sampler2D uSampler1;
+
+  void main(void) {
+    gl_FragColor = vec4(texture2D(uSampler0, vTextureCoord).xyz, 1.0) + vec4(0.0, 0.0, 0.0, 0.0);
+  }
+</script>
+
+
+
+<script id="passB_vertex" type="x-shader/x-vertex">
+attribute vec3 aVertexPosition;
+attribute vec3 aVertexNormal;
+attribute vec2 aTextureCoord;
+
+varying vec2 vTextureCoord;
+
+void main(void) {
+    gl_Position = vec4(aVertexPosition, 1.0);
+    vTextureCoord = aTextureCoord;
+}
+</script>
+
+
+<script id="passB_fragment" type="x-shader/x-fragment">
+precision mediump float;
+
+varying vec2 vTextureCoord;
+uniform sampler2D uSampler0;
+uniform sampler2D uSampler1;
+
+void main(void) {
+  vec3 pos = texture2D(uSampler0, vTextureCoord).xyz;
+  vec3 vel = texture2D(uSampler1, vTextureCoord).xyz;
+
+
+  vec3 newPos = pos+vel*0.001 - vec3(0,0,0.01);
+  gl_FragColor = vec4(newPos, 1.0);
+}
+</script>
+
+
+<script id="render_particles_vertex" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    attribute vec2 aTextureCoord;
+
+    varying vec4 vPosition;
+
+    uniform sampler2D uSampler;
+
+    void main(void) {
+        vPosition = texture2D (uSampler, aVertexPosition.xy);
+
+        if (vPosition.z < 0.0)  vPosition.z = 0.0;
+        float lifetime = vPosition.z;
+
+        vPosition.xy += aTextureCoord.xy*(0.004 + aVertexPosition.z*0.004)*lifetime;
+
+        gl_Position = vec4 (vPosition.xy, 0.0, 1.0);
+    }
+</script>
+
+<script id="render_particles_fragment" type="x-shader/x-fragment">
+    precision mediump float;
+
+    varying vec4 vPosition;
+    uniform sampler2D uSampler;
+
+    void main(void) {
+      gl_FragColor = vec4(vPosition.z*0.1, vPosition.z*0.1, vPosition.z*0.1, 1.0);
+    }
+</script>
+
+
+
+<script type="text/javascript">
+
+
+
+
+var passA;
+var passB;
+var passRender;
+
+var texturePos;
+var textureVel;
+var textureInfo;
+
+var W = 1024;
+var H = 1024;
+
+var float_textures_ext;
+var color_buffer_float_ext;
+
+
+function initBuffers() {
+    var tmp = [];
+    for (var i=0; i<W; i++) {
+      for (var j=0; j<H; j++) {
+        tmp.push((i/W*2-1)*0.5);
+        tmp.push ((j/H*2-1)*0.5); //j*0.0025-0.3);
+        tmp.push (Math.random()*10);
+        tmp.push (1.0);
+      }
+    }
+    var posData = new Float32Array(tmp);
+
+
+    texturePos = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texturePos);
+
+    gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA,
+                   W, H,
+                   0, gl.RGBA, gl.FLOAT, posData);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+
+    tmp = [];
+    for (var i=0; i<W; i++) {
+      for (var j=0; j<H; j++) {
+        tmp.push (Math.random()-0.5);
+        tmp.push (Math.random()-0.5); //j*0.0025-0.3);
+        tmp.push (0);
+        tmp.push (1.0);
+      }
+    }
+    var velData = new Float32Array(tmp);
+
+
+    textureVel = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, textureVel);
+
+    gl.texImage2D (gl.TEXTURE_2D, 0, gl.RGBA,
+                   W, H,
+                   0, gl.RGBA, gl.FLOAT, velData);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+
+    var gl;
+    function initGL(canvas) {
+        try {
+            gl = canvas.getContext("experimental-webgl");
+            gl.viewportWidth = canvas.width;
+            gl.viewportHeight = canvas.height;
+        } catch (e) {
+        }
+        if (!gl) {
+            alert("Could not initialise WebGL, sorry :-(");
+        }
+    }
+
+    var time = 0;
+
+
+
+
+    function drawScene() {
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        passA.draw (texturePos, null, true);
+
+        passB.draw (passA.rttTexture, textureVel, true);
+        texturePos = passB.rttTexture;
+
+        passRender.draw(passB.rttTexture);
+        //passRender.draw(texturePos);
+
+    }
+
+
+    var lastTime = 0;
+
+    function animate() {
+        var timeNow = new Date().getTime();
+        if (lastTime != 0) {
+            var elapsed = timeNow - lastTime;
+        }
+        lastTime = timeNow;
+    }
+
+
+    function tick() {
+        requestAnimFrame(tick);
+        drawScene();
+        animate();
+    }
+
+    function webGLStart() {
+        var canvas = document.getElementById("lesson16-canvas");
+        initGL(canvas);
+
+        color_buffer_float_ext = gl.getExtension('WEBGL_color_buffer_float');
+        float_textures_ext = gl.getExtension('OES_texture_float');
+
+
+        shaderprogramB = gl.createProgram();
+        shaderProgramA = gl.createProgram();
+
+
+        initShaders (shaderProgramA, "passA_vertex", "passA_fragment");
+        initShaders (shaderprogramB, "passB_vertex", "passB_fragment");
+
+        passA = new ScreenRenderer (0,0, W, H, shaderProgramA);
+        passA.initTextureFramebuffer();
+
+        passB = new ScreenRenderer (0,0, W, H, shaderprogramB);
+        passB.initTextureFramebuffer();
+
+        passRender = new ParticleRenderer(103);
+
+        initBuffers();
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.enable(gl.DEPTH_TEST);
+
+        tick();
+    }
+
+</script>
+
+
+</head>
+
+
+<body onload="webGLStart();">
+    <canvas id="lesson16-canvas" style="border: none;" width="1024" height="1024"></canvas>
+</body>
+
+</html>

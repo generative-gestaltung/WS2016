@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html>
+
+  <body>
+    <canvas id="myCanvas" width="1200" height="700"></canvas>
+    <script type="text/javascript" src="gg_util_functions.js"></script>
+
+    <script>
+
+		var canvas = document.getElementById("myCanvas");
+		var context = canvas.getContext('2d');
+		var frameCount = 0;
+
+    var N = 18;
+    var neurons = [];
+
+    var Synapse = function (n0, n1) {
+      this.n0 = n0;
+      this.n1 = n1;
+      this.len = dist2(n0, n1)*0.4;
+      this.pot = 0;
+      this.prop = 0;
+    }
+
+    Synapse.prototype.update = function() {
+
+      if (this.pot==1) {
+        this.prop += 1;
+        if (this.prop>=this.len) {
+          this.pot = 0;
+          this.prop = 0;
+          this.n1.pot = 1.1;
+        }
+      }
+    }
+
+    var Neuron = function(x,y) {
+      this.x = x;
+      this.y = y;
+      this.w = 10;
+      this.h = 10;
+      this.pot = 0;
+
+      this.synapses = [];
+    }
+
+    Neuron.prototype.draw = function() {
+      context.fillRect(this.x, this.y, this.w, this.h);
+    }
+
+    Neuron.prototype.update = function() {
+
+      if (this.pot>1) {
+        this.fire();
+        this.pot = 0;
+      }
+
+      for (var i=0; i<this.synapses.length; i++) {
+        //this.synapses[i].update();
+      }
+    }
+
+    Neuron.prototype.fire = function() {
+      for (var i=0; i<this.synapses.length; i++) {
+
+        this.synapses[i].pot = 1;
+        console.log(this.synapses[i]);
+        /*
+        var s = this.synapses[i];
+        s.pot = 1;
+        if (this.synapses[i].prop==0 && this.synapses.pot==0) {
+          this.synapses[i].pot = 1;
+          this.synapses[i].prop = 0;
+        }
+        */
+      }
+      //this.pot = 0;
+
+    }
+
+    function drawSynapses() {
+      context.strokeStyle = "#a55";
+      context.beginPath();
+
+      for (var i=0; i<neurons.length; i++) {
+        for (var j=0; j<neurons[i].synapses.length; j++) {
+
+          var s = neurons[i].synapses[j];
+          if (i==10)
+            console.log(s.pot);
+
+          if (s.pot==1) {
+            context.strokeStyle = "#058"
+          }
+          else {
+            context.strokeStyle = "a88";
+          }
+          var n0 = s.n0;
+          var n1 = s.n1;
+          context.moveTo(n0.x+n0.w/2, n0.y+n0.h/2);
+          context.lineTo(n1.x+n1.w/2, n1.y+n1.h/2);
+
+          if (s.pot==1) {
+            context.fillStyle = "#ff0";
+            var x = blend(n0.x, n1.x, s.prop / s.len);
+            var y = blend(n0.y, n1.y, s.prop / s.len);
+            context.fillRect(x+n0.w/2-2, y+n0.h/2-2, 4, 4);
+          }
+        }
+      }
+      context.stroke();
+    }
+
+
+    function setup() {
+      for (var i=0; i<N; i++) {
+        for (var j=0; j<N; j++) {
+          //neurons.push(new Neuron(i*canvas.width/N, j*canvas.height/N));
+          neurons.push(new Neuron(Math.random()*canvas.width, Math.random()*canvas.height));
+        }
+      }
+      for (var i=0; i<neurons.length; i++) {
+        var n0 = neurons[i];
+        for (var j=0; j<neurons.length; j++) {
+          var n1 = neurons[j];
+          if (dist2(n0,n1) < 150) {
+            if (Math.random()<0.2) {
+              n0.synapses.push(new Synapse(n0, n1));
+            }
+          }
+        }
+      }
+
+      neurons[10].fire();
+    }
+
+
+    var draw = function() {
+
+      context.fillStyle = "rgba(0,0,0,0.1)";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      context.fillStyle = "#999";
+      for (var i=0; i<neurons.length; i++) {
+        neurons[i].update();
+        neurons[i].draw();
+      }
+      drawSynapses();
+
+      frameCount = frameCount+1;
+      requestAnimationFrame(draw);
+    };
+
+
+
+    setup();
+    draw();
+
+    </script>
+
+  </body>
+
+</html>

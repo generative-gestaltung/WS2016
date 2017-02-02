@@ -1,0 +1,299 @@
+<html>
+  <body>
+
+    <script src="three.min.js"></script>
+    <script src="gg_util_perlin.js"></script>
+
+      <script id="vertexShader" type="x-shader/x-vertex">
+
+        // user defined uniforms, values are passed in runtime
+        uniform vec2 offset;
+        uniform vec2 size;
+        uniform float time;
+        uniform float u_tripos[300];
+
+        varying vec4 v_color;
+        varying vec2 v_pos;
+        varying vec3 v_coord;
+
+        void main() {
+
+
+          vec4 positionNew = vec4 (position.xy, 0.0, 1.0);
+
+          v_color = vec4(time, 1.0, 1.0, 1.0);
+          v_coord = vec3(uv, position.z);
+          v_pos = vec2(uv*size) + offset;
+
+          if (position.z!=0.0) {
+            positionNew.x += u_tripos[int(position.z)] - offset.x;
+            positionNew.y += u_tripos[int(mod(position.z+20.0, 100.0))] - offset.y;
+
+            if (positionNew.x < offset.x || positionNew.x>offset.x+size.x
+             || positionNew.y < offset.y || positionNew.y > offset.y+size.y) {
+              positionNew.x = 0.0;
+              positionNew.y = 0.0;
+            }
+          }
+
+          // calcuate pixel position on screen and pass to fragment shader
+          gl_Position = projectionMatrix * modelViewMatrix * positionNew;
+
+        }
+
+        </script>
+
+        <script id="fragmentShader" type="x-shader/x-fragment">
+
+          uniform float centersX[10];
+          uniform float centersY[10];
+          uniform int u_scene;
+          uniform float time;
+
+          precision mediump float;
+          precision mediump int;
+
+          varying vec4 v_color;
+          varying vec2 v_pos;
+          varying vec3 v_coord;
+
+
+          float distM (vec2 x0, vec2 x1) {
+            return max(abs(x0.x-x1.x), abs(x0.y-x1.y));
+          }
+
+          float saw (float ph) {
+            return -mod(ph, 6.28)/6.28*2.0+1.0;
+          }
+
+          float cnst (float v, float min, float max) {
+            if (v<min) return min;
+            if (v>max) return max;
+            return v;
+          }
+
+
+          vec4 color;
+          float br;
+
+          void rect (float dd, vec2 p) {
+            float d = distM (v_pos.xy*0.01, p);
+            if (d>dd-0.02 && d<dd) {
+              //br += 0.1;
+              //color = vec4 (0.2, 0.2, 0.3, 1.0);
+            }
+          }
+
+          void main() {
+
+            color = vec4(1.0);
+            br = 0.0;
+
+            if (u_scene==0) {
+              float dMin = 999999.0;
+              float dMin2 = 999999.0;
+              int found = 0;
+
+              for (int i=0; i<10; i++) {
+                float d = distance(v_pos, vec2(centersX[i], centersY[i]));
+                if (d<dMin) {
+                  dMin = d;
+                  found = i;
+                }
+              }
+
+              for (int i=0; i<10; i++) {
+                float d = distance(v_pos, vec2(centersX[i], centersY[i]));
+                if (d<dMin2 && d>dMin) {
+                  dMin2 = d;
+                }
+              }
+              float d = distance(v_pos, vec2(centersX[0], centersY[0]));
+              float b = (dMin2-dMin)*0.004;
+              color = vec4(b*sin(float(found)), b*sin(float(found)+1.0), b, 1.0);
+            }
+
+            else if (u_scene==1) {
+              color = vec4(sin(v_pos.x*0.01*v_color.x*0.01*centersX[0]*0.01), sin(v_pos.y*0.01*v_color.x*0.02), 1.0, 1.0);
+            }
+
+            else if (u_scene==2) {
+              color = vec4(sin(time*0.001+v_pos.x*0.1*time*v_pos.y*0.01)*0.2+0.2, 0.0, 0.0, 1.0);
+
+              float f = 0.002;
+              float f0 = 0.0001;
+              float b = 1.0;
+
+              for (int i=0; i<100; i++) {
+                float dd = cnst(1.0-saw(time*f+float(i)), 0.0, 1.0)*1.5;
+                float spa = float(i)*0.1;
+                float R = 3.0*sin(time*0.0001);
+              }
+              //color = vec4(br, br, br, 1.0);
+            }
+
+
+            if (v_coord.z!=0.0)
+              color = vec4(1.0, 0.0, 1.0, 1.0);
+
+            gl_FragColor = color;
+          }
+        </script>
+
+    <script>
+
+    var scene;
+    var camera;
+    var renderer;
+
+    var c_arrayX = [];
+    var c_arrayY = [];
+
+
+    function init_gl() {
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera (70, window.innerWidth/window.innerHeight, 0.1, 50000);
+
+      // default params
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize (window.innerWidth, window.innerHeight);
+      document.body.appendChild (renderer.domElement);
+    }
+
+    var Screen = function (x, y, w, h) {
+
+      this.x = x;
+      this.y = y;
+      this.w = w;
+      this.h = h;
+
+      var arr = [];
+      for (var i=0; i<300; i++)
+        arr[i] = Math.random()*100;
+
+      this.material = new THREE.ShaderMaterial ({
+                            uniforms: {
+                              time: {value: 1.0 },
+                              offset: {value: new THREE.Vector2(0,0)},
+                              size: {value: new THREE.Vector2(0,0)},
+                              u_scene: {value: 2},
+                              centersX: {value: c_arrayX},
+                              centersY: {value: c_arrayY},
+                              u_tripos: {value: arr}
+                            },
+                            vertexShader: document.getElementById ('vertexShader').textContent,
+                            fragmentShader: document.getElementById ('fragmentShader').textContent,
+                            side: THREE.DoubleSide,
+                            transparent: true
+                        });
+
+      this.geometry = new THREE.Geometry();
+
+      this.geometry.vertices.push(new THREE.Vector3 (x, y, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x+w, y, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x+w, y+h, 0));
+
+      this.geometry.faceVertexUvs[0].push([
+        new THREE.Vector2(0,0),
+        new THREE.Vector2(1,0),
+        new THREE.Vector2(1,1)
+      ]);
+
+      this.geometry.vertices.push(new THREE.Vector3 (x, y, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x+w, y+h, 0));
+      this.geometry.vertices.push(new THREE.Vector3 (x, y+h, 0));
+
+      this.geometry.faceVertexUvs[0].push([
+        new THREE.Vector2(0,0),
+        new THREE.Vector2(1,1),
+        new THREE.Vector2(0,1)
+      ]);
+
+      this.geometry.faces.push (
+        new THREE.Face3(0,1,2),
+        new THREE.Face3(3,4,5)
+      );
+
+
+      for (var i=0; i<300; i++) {
+
+        xx = 0;
+        yy = 0;
+
+        this.geometry.vertices.push (new THREE.Vector3 (x+xx, y+yy, i+1));
+        this.geometry.vertices.push (new THREE.Vector3 (x+xx, y+yy+20.0, i+1));
+        this.geometry.vertices.push (new THREE.Vector3 (x+xx+20.0, y+yy+20.0, i+1));
+
+        this.geometry.faceVertexUvs[0].push([
+          new THREE.Vector2 (0,0),
+          new THREE.Vector2 (1,1),
+          new THREE.Vector2 (0,1)
+        ]);
+
+        this.geometry.faces.push (
+          new THREE.Face3 (6*i, 6*i+1, 6*i+2),
+          new THREE.Face3 (6*i+3, 6*i+4, 6*i+5)
+        );
+      }
+
+      this.mesh = new THREE.Mesh (this.geometry, this.material);
+      scene.add(this.mesh);
+    }
+
+
+    var w = 500;
+    var h = 400;
+    var N = 4;
+    var screens = [];
+
+
+
+    function init_model() {
+      for (var i=0; i<N; i++) {
+        screens[i] = [];
+        for (var j=0; j<N; j++) {
+          screens[i][j] = new Screen (i*w-(N/2)*w, j*h-(N/2)*h, w*0.94, h*0.94);
+        }
+      }
+    }
+
+    var render = function () {
+
+      camera.position.x = 0;
+      camera.position.y = 0;
+      camera.position.z = 1000;
+      camera.lookAt (new THREE.Vector3 (0,0,0));
+      var time = performance.now();
+
+      for (var i=0; i<10; i++) {
+        c_arrayX[i] = noise.simplex2(time*0.0002+i*400,0)*w*2;
+        c_arrayY[i] = noise.simplex2(time*0.0002+i*700,1000)*w*2;
+      }
+
+      for (var i=0; i<N; i++) {
+        for (var j=0; j<N; j++) {
+          var s = screens[i][j];
+          screens[i][j].material.uniforms.time.value     = time;
+          screens[i][j].material.uniforms.offset.value   = new THREE.Vector2(s.x, s.y);
+          screens[i][j].material.uniforms.size.value     = new THREE.Vector2(s.w, s.h);
+          screens[i][j].material.uniforms.centersX.value = c_arrayX;
+          screens[i][j].material.uniforms.centersY.value = c_arrayY;
+
+          for (var ii=0; ii<300; ii++) {
+            screens[i][j].material.uniforms.u_tripos.value[ii] = Math.sin(time*0.01+ii*0.08)*700+100;
+          }
+        }
+      }
+
+      requestAnimationFrame (render);
+      renderer.render (scene, camera);
+    };
+
+    init_gl();
+    init_model();
+    render();
+
+    </script>
+  </body>
+  </html>

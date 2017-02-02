@@ -1,3 +1,8 @@
+
+function dist2 (v0,v1) {
+  return Math.sqrt(Math.pow(v0.x-v1.x,2)+Math.pow(v0.y-v1.y,2));
+}
+
 function saw (phase) {
   return (phase % (Math.PI*2)) / 2 / Math.PI;
 }

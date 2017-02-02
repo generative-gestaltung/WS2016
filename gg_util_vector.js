@@ -1,3 +1,4 @@
+
 var Vector2 = function (x, y) {
   this.x = x;
   this.y = y;
@@ -33,7 +34,6 @@ Vector2.prototype.normalize = function () {
   var ret = new Vector2(this.x / len, this.y / len);
   return ret;
 }
-
 
 var Vector3 = function (x, y, z) {
   this.x = x;
